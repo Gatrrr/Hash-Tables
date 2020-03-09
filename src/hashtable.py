@@ -43,7 +43,7 @@ class HashTable:
 
     def insert(self, key, value):
         self.size += 1
-        index = self._hash(key)
+        index = self._hash_mod(key)
         node = self.storage[index]
         if node is None:
             self.storage[index] = node(key, value)
@@ -86,13 +86,19 @@ class HashTable:
 
 
     def resize(self):
-        '''
-        Doubles the capacity of the hash table and
-        rehash all key/value pairs.
+        new_storage = [None] * (self.capacity * 2)
+        for i in range(self.capacity):
+            #check for a key, value pair to rehash
+            if self.storage[i] != None:
+                key = self.storage[i].key
+                value = self.storage[i].value
+                #rehash using a new storage size
+                index = self._hash(key) % (self.capacity * 2)
+                new_storage[index] = LinkedPair(key, value)
 
-        Fill this in.
-        '''
-        pass
+        self.storage = new_storage
+        print(self.storage)
+
 
 
 
