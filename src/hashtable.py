@@ -7,125 +7,94 @@ class LinkedPair:
         self.value = value
         self.next = None
 
+
 class HashTable:
-    '''
-    A hash table that with `capacity` buckets
-    that accepts string keys
-    '''
+
     def __init__(self, capacity):
         self.capacity = capacity  # Number of buckets in the hash table
-        self.size = 0
         self.storage = [None] * capacity
 
-
     def _hash(self, key):
-        hashsum = 0
-        for idx, c in enumerate(key):
-            hashsum += (idx + len(key)) ** ord(c)
-            hashsum = hashsum % self.capacity
-        return hashsum
-
+        return hash(key)
 
     def _hash_djb2(self, key):
-        hash = 5381
-        for c in key:
-            hash = (hash*33) + ord(c)
         return hash
 
-
     def _hash_mod(self, key):
-        '''
-        Take an arbitrary key and return a valid integer index
-        within the storage capacity of the hash table.
-        '''
-        return self._hash(key) % self.capacity
-
+        return self._hash(key) % self.capacity  # gets the remainder
+        #
 
     def insert(self, key, value):
-        self.size += 1
-        index = self._hash_mod(key)
-        node = self.storage[index]
-        if node is None:
-            self.storage[index] = node(key, value)
-            return
-        prev = node
-        while node is not None:
-            prev = node
-            node = node.next
-        prev.next = node(key, value)
-
-
+        new_hash_index = LinkedPair(key, value)
+        hash_index = self._hash_mod(key)
+        if self.storage[hash_index] is not None:  # bucket exists already
+            if self.storage[hash_index].key == key:  # check if first node in bucket is the key we are looking for
+                self.storage[hash_index] = new_hash_index  # if it is then replace node w new node
+                return
+            current = self.storage[hash_index]  # first node in bucket is not the key we are looking for
+            while current.next is not None:  # iterate through until we find the key
+                if current.key == key:
+                    current = new_hash_index  # update node to new node values (key,value)
+                    break
+                current = current.next  # lets us iterate
+            current.next = new_hash_index  # bucket does not exist then add node to new bucket
+        else:
+            self.storage[hash_index] = new_hash_index
 
     def remove(self, key):
-        index = self.hash(key)
-        node = self.storage[index]
-        while node is not None and node.key != key:
-            prev = node
-            node = node.next
-        if node is None:
-            return None
+        index = self._hash_mod(key)
+        if self.storage[index] is not None:
+            self.storage[index] = None  # if found the index then remove it
         else:
-            self.size -= 1
-            result = node.value
-            if prev is None:
-                node = None
-            else:
-                prev.next = prev.next.next
-            return result
-
+            print("warning:key not found")
 
     def retrieve(self, key):
-        index = self.hash(key)
-        node = self.buckets[index]
-        while node is not None and node.key != key:
-            node = node.next
-        if node is None:
-            return None
+        bucket_index = self._hash_mod(key)
+        if self.storage[bucket_index] is not None:
+            # if the first node at the bucket is equal to the key = there is only 1 node = return value
+            if self.storage[bucket_index].key == key:
+                return self.storage[bucket_index].value
+            # if the first node doesn't equal to the key = iterate through bucket (linked list) until you get the bucket
+            else:
+                bucket = self.storage[bucket_index]
+                while bucket.key is not key and bucket is not None:
+                    bucket = bucket.next
+                return bucket.value
         else:
-            return node.value
-
+            return None
 
     def resize(self):
-        new_storage = [None] * (self.capacity * 2)
-        for i in range(self.capacity):
-            #check for a key, value pair to rehash
-            if self.storage[i] != None:
-                key = self.storage[i].key
-                value = self.storage[i].value
-                #rehash using a new storage size
-                index = self._hash(key) % (self.capacity * 2)
-                new_storage[index] = LinkedPair(key, value)
-
-        self.storage = new_storage
-        print(self.storage)
-
-
+        temp_storage = self.storage
+        self.capacity = self.capacity * 2
+        self.storage = [None] * self.capacity
+        for bucket in temp_storage:
+            if bucket is None:
+                pass
+            elif bucket.next is None:
+                self.insert(bucket.key, bucket.value)
+            else:
+                while bucket is not None:
+                    self.insert(bucket.key, bucket.value)
+                    bucket = bucket.next
 
 
 if __name__ == "__main__":
     ht = HashTable(2)
-
     ht.insert("line_1", "Tiny hash table")
     ht.insert("line_2", "Filled beyond capacity")
     ht.insert("line_3", "Linked list saves the day!")
-
     print("")
-
     # Test storing beyond capacity
     print(ht.retrieve("line_1"))
     print(ht.retrieve("line_2"))
     print(ht.retrieve("line_3"))
-
     # Test resizing
     old_capacity = len(ht.storage)
     ht.resize()
     new_capacity = len(ht.storage)
-
     print(f"\nResized from {old_capacity} to {new_capacity}.\n")
-
     # Test if data intact after resizing
     print(ht.retrieve("line_1"))
     print(ht.retrieve("line_2"))
     print(ht.retrieve("line_3"))
-
     print("")
